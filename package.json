@@ -1,0 +1,22 @@
+{
+  "name": "nekomaid",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CatHandRuler/nekomaid.git"
+  },
+  "author": "CatHandRuler",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CatHandRuler/nekomaid/issues"
+  },
+  "homepage": "https://github.com/CatHandRuler/nekomaid#readme",
+  "devDependencies": {
+    "dotenv": "^14.2.0"
+  }
+}
