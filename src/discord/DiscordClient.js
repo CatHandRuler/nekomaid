@@ -64,8 +64,9 @@ export default class DiscordClient extends Client {
     this.on('messageCreate', (message) => {
       if (message.author.bot) return;
       if (message.channel.id === this.#channelID) return;
+      if (message.channel.name.indexOf('명령어') !== -1) return;
       if (
-        /((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?g/.test(
+        /((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?/gm.test(
           message.content
         )
       ) {
