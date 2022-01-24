@@ -1,52 +1,47 @@
+import Logger from '../component/Logger.js';
+import path from 'path';
 import { readdir } from 'fs/promises';
 import { Client, Collection } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import path from 'path';
+
+const log = new Logger('client.discord');
 
 export default class DiscordClient extends Client {
+  #appID;
+  #channelID;
+  #commands;
+  #tokenSettedRest;
+
   constructor(options) {
     super(options.option);
     this.token = options.token;
-    this.appID = options.appID;
-    this.channelID = options.channelID;
-    this.commands = new Collection();
-    this.tokenSettedRest = new REST({ version: 9 }).setToken(this.token);
+    this.#appID = options.appID;
+    this.#channelID = options.channelID;
+    this.#commands = new Collection();
+    this.#tokenSettedRest = new REST({ version: 9 }).setToken(this.token);
   }
 
   setup() {
-    this.setupCommands();
-    this.setupEvents();
+    this.#setupCommands();
+    this.#setupEvents();
   }
 
-  setupCommands() {
+  #setupCommands() {
     const cmdPath = path.join(path.resolve(), 'src', 'discord', 'command');
+
     readdir(cmdPath)
       .then((fileNames) =>
         fileNames.forEach((fileName) =>
           import(`./command/${fileName}`)
-            .then((cmd) => this.commands.set(cmd.name, cmd))
-            .catch((e) => {
-              console.log(
-                `${'-'.repeat(50)} ${new Date().toLocaleString(
-                  'ko-KR'
-                )} ${'-'.repeat(50)}`
-              );
-              console.error(e);
-            })
+            .then((cmd) => this.#commands.set(cmd.name, cmd))
+            .catch(log.error.bind(log))
         )
       )
-      .catch((e) => {
-        console.log(
-          `${'-'.repeat(50)} ${new Date().toLocaleString('ko-KR')} ${'-'.repeat(
-            50
-          )}`
-        );
-        console.error(e);
-      });
+      .catch(log.error.bind(log));
   }
 
-  setupEvents() {
+  #setupEvents() {
     this.once('ready', (client) => {
       client.user.setActivity('guild.messages', { type: 'WATCHING' });
       client.user.setStatus('online');
@@ -54,28 +49,21 @@ export default class DiscordClient extends Client {
         .fetch({ limit: 200 })
         .then((guildCollection) =>
           guildCollection.each((guild) =>
-            this.tokenSettedRest.put(
-              Routes.applicationGuildCommands(this.appID, guild.id),
+            this.#tokenSettedRest.put(
+              Routes.applicationGuildCommands(this.#appID, guild.id),
               {
-                body: this.commands.map((cmdModule) => cmdModule.slashBuilder),
+                body: this.#commands.map((cmdModule) => cmdModule.slashBuilder),
               }
             )
           )
         )
-        .catch((e) => {
-          console.log(
-            `${'-'.repeat(50)} ${new Date().toLocaleString(
-              'ko-KR'
-            )} ${'-'.repeat(50)}`
-          );
-          console.error(e);
-        });
-      console.log(`Logged in Discord as user ${client.user.tag}`);
+        .catch(log.error.bind(log));
+      log.info(`Logged in Discord as user ${client.user.tag}`);
     });
 
     this.on('messageCreate', (message) => {
       if (message.author.bot) return;
-      if (message.channel.id === this.channelID) return;
+      if (message.channel.id === this.#channelID) return;
       if (
         /((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?g/.test(
           message.content
@@ -85,7 +73,7 @@ export default class DiscordClient extends Client {
           .delete()
           .then(() =>
             message.guild.channels
-              .fetch(this.channelID)
+              .fetch(this.#channelID)
               .then((channel) =>
                 channel
                   .send(`메시지 내용: ${message.content}`)
@@ -107,7 +95,7 @@ export default class DiscordClient extends Client {
 
     this.on('interactionCreate', (interaction) => {
       if (!interaction.isCommand) return;
-      const command = this.commands.get(interaction.commandName);
+      const command = this.#commands.get(interaction.commandName);
       command.run(interaction, this);
     });
   }
